@@ -8,25 +8,28 @@ Liscense: MIT
 
 /* Uncomment section below, if you want a trivial password protection */
 
-/*
-$PASSWORD = 'sfm'; 
+
+$PASSWORD = 'sfm';
 session_start();
 if(!$_SESSION['_sfm_allowed']) {
 	// sha1, and random bytes to thwart timing attacks.  Not meant as secure hashing.
-	$t = bin2hex(openssl_random_pseudo_bytes(10));	
+	$t = bin2hex(openssl_random_pseudo_bytes(10));
 	if($_POST['p'] && sha1($t.$_POST['p']) === sha1($t.$PASSWORD)) {
 		$_SESSION['_sfm_allowed'] = true;
 		header('Location: ?');
 	}
-	echo '<html><body><form action=? method=post>PASSWORD:<input type=password name=p /></form></body></html>'; 
+	echo '<html><body><form action=? method=post>PASSWORD:<input type=password name=p /></form></body></html>';
 	exit;
 }
-*/
+
 
 // must be in UTF-8 or `basename` doesn't work
 setlocale(LC_ALL,'en_US.UTF-8');
-
-$tmp = realpath($_REQUEST['file']);
+if (array_key_exists('file',$_REQUEST)) {
+	$tmp = realpath($_REQUEST['file']);
+}else {
+	$tmp = realpath(__FILE__);
+}
 if($tmp === false)
 	err(404,'File or Directory Not Found');
 if(substr($tmp, 0,strlen(__DIR__)) !== __DIR__)
@@ -39,8 +42,8 @@ if($_POST) {
 		err(403,"XSRF Failure");
 }
 
-$file = $_REQUEST['file'] ?: '.';
-if($_GET['do'] == 'list') {
+$file = array_key_exists('file',$_REQUEST)&&($_REQUEST['file']) ? $_REQUEST['file'] : '.';
+if(isset($_GET['do']) && $_GET['do'] == 'list') {
 	if (is_dir($file)) {
 		$directory = $file;
 		$result = array();
@@ -54,7 +57,7 @@ if($_GET['do'] == 'list') {
 	        	'name' => basename($i),
 	        	'path' => preg_replace('@^\./@', '', $i),
 	        	'is_dir' => is_dir($i),
-	        	'is_deleteable' => (!is_dir($i) && is_writable($directory)) || 
+	        	'is_deleteable' => (!is_dir($i) && is_writable($directory)) ||
 	        					   (is_dir($i) && is_writable($directory) && is_recursively_deleteable($i)),
 	        	'is_readable' => is_readable($i),
 	        	'is_writable' => is_writable($i),
@@ -66,10 +69,10 @@ if($_GET['do'] == 'list') {
 	}
 	echo json_encode(array('success' => true, 'is_writable' => is_writable($file), 'results' =>$result));
 	exit;
-} elseif ($_POST['do'] == 'delete') {
+} elseif (array_key_exists('do',$_POST) && $_POST['do'] == 'delete') {
 	rmrf($file);
 	exit;
-} elseif ($_POST['do'] == 'mkdir') {
+} elseif (array_key_exists('do',$_POST) && $_POST['do'] == 'mkdir') {
 	// don't allow actions outside root. we also filter out slashes to catch args like './../outside'
 	$dir = $_POST['name'];
 	$dir = str_replace('/', '', $dir);
@@ -78,13 +81,13 @@ if($_GET['do'] == 'list') {
 	chdir($file);
 	@mkdir($_POST['name']);
 	exit;
-} elseif ($_POST['do'] == 'upload') {
+} elseif (array_key_exists('do',$_POST) && $_POST['do'] == 'upload') {
 	var_dump($_POST);
 	var_dump($_FILES);
 	var_dump($_FILES['file_data']['tmp_name']);
 	var_dump(move_uploaded_file($_FILES['file_data']['tmp_name'], $file.'/'.$_FILES['file_data']['name']));
 	exit;
-} elseif ($_GET['do'] == 'download') {
+} elseif (array_key_exists('do',$_POST) && $_GET['do'] == 'download') {
 	$filename = basename($file);
 	header('Content-Type: ' . mime_content_type($file));
 	header('Content-Length: '. filesize($file));
@@ -107,7 +110,7 @@ function rmrf($dir) {
 function is_recursively_deleteable($d) {
 	$stack = array($d);
 	while($dir = array_pop($stack)) {
-		if(!is_readable($dir) || !is_writable($dir)) 
+		if(!is_readable($dir) || !is_writable($dir))
 			return false;
 		$files = array_diff(scandir($dir), array('.','..'));
 		foreach($files as $file) if(is_dir($file)) {
@@ -135,7 +138,7 @@ $MAX_UPLOAD_SIZE = min(asBytes(ini_get('post_max_size')), asBytes(ini_get('uploa
 
 <style>
 body {font-family: "lucida grande","Segoe UI",Arial, sans-serif; font-size: 14px;width:1024;padding:1em;margin:0;}
-th {font-weight: normal; color: #1F75CC; background-color: #F0F9FF; padding:.5em 1em .5em .2em; 
+th {font-weight: normal; color: #1F75CC; background-color: #F0F9FF; padding:.5em 1em .5em .2em;
 	text-align: left;cursor:pointer;user-select: none;}
 th .indicator {margin-left: 6px }
 thead {border-top: 1px solid #82CFFA; border-bottom: 1px solid #96C4EA;border-left: 1px solid #E7F2FB;
@@ -218,7 +221,7 @@ a.delete {display:inline-block;
 		var $e = this.find('thead th.sort_asc, thead th.sort_desc');
 		if($e.length)
 			this.tablesortby($e.index(), $e.hasClass('sort_desc') );
-		
+
 		return this;
 	}
 	$.fn.settablesortmarkers = function() {
@@ -234,7 +237,7 @@ $(function(){
 	var $tbody = $('#list');
 	$(window).bind('hashchange',list).trigger('hashchange');
 	$('#table').tablesorter();
-	
+
 	$('.delete').live('click',function(data) {
 		$.post("",{'do':'delete',file:$(this).attr('data-file'),xsrf:XSRF},function(response){
 			list();
@@ -285,7 +288,7 @@ $(function(){
 			window.setTimeout(function(){$error_row.fadeOut();},5000);
 			return false;
 		}
-		
+
 		var $row = renderFileUploadRow(file,folder);
 		$('#upload_progress').append($row);
 		var fd = new FormData();
@@ -351,7 +354,7 @@ $(function(){
 			.addClass(data.is_dir ? 'is_dir' : '')
 			.append( $('<td class="first" />').append($link) )
 			.append( $('<td/>').attr('data-sort',data.is_dir ? -1 : data.size)
-				.html($('<span class="size" />').text(formatFileSize(data.size))) ) 
+				.html($('<span class="size" />').text(formatFileSize(data.size))) )
 			.append( $('<td/>').attr('data-sort',data.mtime).text(formatTimestamp(data.mtime)) )
 			.append( $('<td/>').text(perms.join('+')) )
 			.append( $('<td/>').append($dl_link).append( data.is_deleteable ? $delete_link : '') )
