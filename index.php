@@ -187,9 +187,27 @@ a.delete {display:inline-block;
 	background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAB2klEQVR4nJ2ST2sTQRiHn5mdmj92t9XmUJIWJGq9NHrRgxQiCtqbl97FqxgaL34CP0FD8Qv07EHEU0Ew6EXEk6ci8Q9JtcXEkHR3k+zujIdUqMkmiANzmJdnHn7vzCuIWbe291tSkvhz1pr+q1L2bBwrRgvFrcZKKinfP9zI2EoKmm7Azstf3V7fXK2Wc3ujvIqzAhglwRJoS2ImQZMEBjgyoDS4hv8QGHA1WICvp9yelsA7ITBTIkwWhGBZ0Iv+MUF+c/cB8PTHt08snb+AGAACZDj8qIN6bSe/uWsBb2qV24/GBLn8yl0plY9AJ9NKeL5ICyEIQkkiZenF5XwBDAZzWItLIIR6LGfk26VVxzltJ2gFw2a0FmQLZ+bcbo/DPbcd+PrDyRb+GqRipbGlZtX92UvzjmUpEGC0JgpC3M9dL+qGz16XsvcmCgCK2/vPtTNzJ1x2kkZIRBSivh8Z2Q4+VkvZy6O8HHvWyGyITvA1qndNpxfguQNkc2CIzM0xNk5QLedCEZm1VKsf2XrAXMNrA2vVcq4ZJ4DhvCSAeSALXASuLBTW129U6oPrT969AK4Bq0AeWARs4BRgieMUEkgDmeO9ANipzDnH//nFB0KgAxwATaAFeID5DQNatLGdaXOWAAAAAElFTkSuQmCC) no-repeat scroll 0px 5px;
 	padding:4px 0 4px 20px;
 }
+a.select{
+    margin-left: 8px;
+    color: green;
+}
+.name>img{
+    position: absolute;
+    margin-left: 40px;
+}
 </style>
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
 <script>
+var img = document.createElement("img");
+	function Img(x) {
+        img.src = x;
+        x.appendChild(img);
+        }
+
+        function removeImg(x) {
+        img.src = x;
+        x.removeChild(img);
+        }
 (function($){
 	$.fn.tablesorter = function() {
 		var $table = this;
@@ -344,12 +362,14 @@ $(function(){
 		},'json');
 	}
 	function renderFileRow(data) {
-		var $link = $('<a class="name" />')
+	  var $link = $('<a class="name" onmouseover="Img(this)" onmouseout="removeImg(this)"/>')
 			.attr('href', data.is_dir ? '#' + data.path : './'+data.path)
 			.text(data.name);
 		var $dl_link = $('<a/>').attr('href','?do=download&file='+encodeURIComponent(data.path))
 			.addClass('download').text('download');
 		var $delete_link = $('<a href="#" />').attr('data-file',data.path).addClass('delete').text('delete');
+		var $select = $('<a href="#" class="select" />').attr('data-src',data.is_dir ? '#' + data.path : '/futur/web/uploads/'+data.path)
+			.addClass('download').text('select');
 		var perms = [];
 		if(data.is_readable) perms.push('read');
 		if(data.is_writable) perms.push('write');
@@ -361,7 +381,7 @@ $(function(){
 				.html($('<span class="size" />').text(formatFileSize(data.size))) )
 			.append( $('<td/>').attr('data-sort',data.mtime).text(formatTimestamp(data.mtime)) )
 			.append( $('<td/>').text(perms.join('+')) )
-			.append( $('<td/>').append($dl_link).append( data.is_deleteable ? $delete_link : '') )
+			.append( $('<td/>').append($dl_link).append($select).append( data.is_deleteable ? $delete_link : '') )
 		return $html;
 	}
 	function renderBreadcrumbs(path) {
@@ -389,8 +409,16 @@ $(function(){
 		var d = Math.round(bytes*10);
 		return pos ? [parseInt(d/10),".",d%10," ",s[pos]].join('') : bytes + ' bytes';
 	}
-})
+	$(document).on("click","a.select",function(e){
+			item_url = $(this).data("src");
+			var args = top.tinymce.activeEditor.windowManager.getParams();
+			win = (args.window);
+			input = (args.input);
+			win.document.getElementById(input).value = item_url;
+			top.tinymce.activeEditor.windowManager.close();
+	});
 
+});
 </script>
 </head><body>
 <div id="top">
