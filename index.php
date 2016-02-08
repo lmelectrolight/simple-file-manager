@@ -238,10 +238,12 @@ $(function(){
 	$(window).bind('hashchange',list).trigger('hashchange');
 	$('#table').tablesorter();
 
-	$('.delete').live('click',function(data) {
-		$.post("",{'do':'delete',file:$(this).attr('data-file'),xsrf:XSRF},function(response){
-			list();
-		},'json');
+	$('body').on('click', '.delete', function (data) {
+		var r = confirm('Do you Want to Delete ?');
+		if(r==true){
+		$.post("", {'do': 'delete', file: $(this).attr('data-file'), xsrf: XSRF}, function (response) {
+				list();
+		}, 'json');
 		return false;
 	});
 
