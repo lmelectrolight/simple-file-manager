@@ -8,22 +8,23 @@ Liscense: MIT
 
 /* Uncomment section below, if you want a trivial password protection */
 
-
+/*
 $PASSWORD = 'sfm';
 session_start();
-if(!$_SESSION['_sfm_allowed']) {
+if(!isset($_SESSION['_sfm_allowed'])) {
 	// sha1, and random bytes to thwart timing attacks.  Not meant as secure hashing.
 	$t = bin2hex(openssl_random_pseudo_bytes(10));
-	if($_POST['p'] && sha1($t.$_POST['p']) === sha1($t.$PASSWORD)) {
+	if(isset($_POST['p']) && sha1($t.$_POST['p']) === sha1($t.$PASSWORD)) {
 		$_SESSION['_sfm_allowed'] = true;
 		header('Location: ?');
 	}
 	echo '<html><body><form action=? method=post>PASSWORD:<input type=password name=p /></form></body></html>';
 	exit;
 }
+*/
 
 
-// must be in UTF-8 or `basename` doesn't work
+// must be in UTF-8 or `basename` doesn't workgit session_status
 setlocale(LC_ALL,'en_US.UTF-8');
 if (array_key_exists('file',$_REQUEST)) {
 	$tmp = realpath($_REQUEST['file']);
@@ -35,7 +36,7 @@ if($tmp === false)
 if(substr($tmp, 0,strlen(__DIR__)) !== __DIR__)
 	err(403,"Forbidden");
 
-if(!$_COOKIE['_sfm_xsrf'])
+if(!array_key_exists('_sfm_xsrf',$_COOKIE))
 	setcookie('_sfm_xsrf',bin2hex(openssl_random_pseudo_bytes(16)));
 if($_POST) {
 	if($_COOKIE['_sfm_xsrf'] !== $_POST['xsrf'] || !$_POST['xsrf'])
@@ -245,6 +246,7 @@ $(function(){
 				list();
 		}, 'json');
 		return false;
+		}
 	});
 
 	$('#mkdir').submit(function(e) {
